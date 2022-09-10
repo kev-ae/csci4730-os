@@ -1,0 +1,11 @@
+1. compile assembly code.
+		step 1: $ gcc -c <source.s> -o <object.o>
+		step 2: $ ld <object.o> -o <executable>
+
+
+2. disassemble an object code (or executable)
+		$ objdump -S <targetfile>
+
+3. Linux manual page
+		$ man <library function or syscall>
+
