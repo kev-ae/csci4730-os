@@ -86,7 +86,7 @@ void serial_mat_mult()
 
 void child_process_core(int i, int pipefd, int crashRate)
 {
-		int temp;
+		int temp, j;
 
 		printf("The child process (pid:%d) created to calculate job #(%d/%d).\n", getpid(), i, m);
 		simulate_crash(crashRate);
@@ -97,7 +97,7 @@ void child_process_core(int i, int pipefd, int crashRate)
 			**/
 
 		// loop through B and get the entire row of the new matrix
-		for(int j = 0; j < p; j++) {
+		for(j = 0; j < p; j++) {
 			temp = linear_mult(A[i], B_tran[j], n);
 			write(pipefd, &temp, sizeof(temp));
 		}
@@ -110,8 +110,7 @@ void parallel_mat_mult(int numProc, int crashRate)
 {
 		int pid[numProc];
 		int pipefd[numProc][2];
-		int wstatus;
-		int i;
+		int wstatus, i, j, k;
 		int runningChild = numProc;
 		int buf[1];
 		int status_id;
@@ -134,7 +133,7 @@ void parallel_mat_mult(int numProc, int crashRate)
 		/** Parent process waits for the children processes.
 			* Read the results from each child process via pipe, and store them into C_parallel.
 			* Design and implement the crash recovery **/
-		for(int j = 0; j < numProc; j++) {
+		for(j = 0; j < numProc; j++) {
 			while(flag) {
 				waitpid(pid[j], &status_id, 0);
 				if(WIFEXITED(status_id)) {
@@ -151,7 +150,7 @@ void parallel_mat_mult(int numProc, int crashRate)
 					}
 				}
 			}
-			for(int k = 0; k < p; k++) {
+			for(k = 0; k < p; k++) {
 				read(pipefd[j][0], buf, sizeof(int));
 				C_parallel[j][k] = buf[0];				
 			}	
