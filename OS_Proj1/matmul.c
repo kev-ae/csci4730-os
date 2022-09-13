@@ -110,16 +110,19 @@ void parallel_mat_mult(int numProc, int crashRate)
 {
 		int pid[numProc];
 		int pipefd[numProc][2];
-		int wstatus, i, j, k;
+		int wstatus, status_id, index, i, j, k;
 		int runningChild = numProc;
 		int buf[1];
-		int status_id;
-		int flag = 1;
+		int pid_to_pipe[numProc];
+		int proc_left = numProc;
+		int end = numProc - 1;
+		int fail_p = 0;
 
 		for(i = 0; i < numProc; i++)
 		{
 				pipe(pipefd[i]);
 				pid[i] = fork();
+				pid_to_pipe[i] = i;
 
 				if(pid[i] == 0) {
 					 child_process_core(i, pipefd[i][1], crashRate);
@@ -133,29 +136,51 @@ void parallel_mat_mult(int numProc, int crashRate)
 		/** Parent process waits for the children processes.
 			* Read the results from each child process via pipe, and store them into C_parallel.
 			* Design and implement the crash recovery **/
-		for(j = 0; j < numProc; j++) {
-			while(flag) {
-				waitpid(pid[j], &status_id, 0);
-				if(WIFEXITED(status_id)) {
-					flag = 0;	
-				} else {
-					pid[j] = fork();
-					
-					if(pid[j] == 0) {
-						child_process_core(j, pipefd[j][1], crashRate);
-						exit(0);
-					} else if (pid[j] < 0) {
-						printf("Fork failed\n");
-						exit(0);
-					}
+		j = 0;
+		while(proc_left != 0) {
+			// get status of pid and mapping from pid to pipe
+			waitpid(pid[j], &status_id, 0);
+			index = pid_to_pipe[j];
+			if(WIFEXITED(status_id)) {
+				// success, read from pipe and write to C_parallel matrix
+				for(k = 0; k < p; k++) {
+					read(pipefd[index][0], buf, sizeof(int));
+					C_parallel[index][k] = buf[0];				
+				}	
+
+				// close pipe and decrease number of processes
+				close(pipefd[index][0]);
+				proc_left--;
+			} else {
+				// failed, create a new child process and shift towards beginning of pid array
+				pid[fail_p] = fork();
+
+				// map pipe index to new position of pid in array
+				pid_to_pipe[fail_p] = index;
+				
+				if(pid[fail_p] == 0) {
+					// child process will run calculate method
+					child_process_core(index, pipefd[index][1], crashRate);
+					exit(0);
+				} else if (pid[fail_p] < 0) {
+					printf("Fork failed\n");
+					exit(0);
 				}
+				fail_p++;
 			}
-			for(k = 0; k < p; k++) {
-				read(pipefd[j][0], buf, sizeof(int));
-				C_parallel[j][k] = buf[0];				
-			}	
-			close(pipefd[j][0]);
-			flag = 1;
+			
+			/* 
+ 			* if counter j reaches end pointer, reset j to check on failed processes.
+			* update end pointer to current processes left
+			* reset head pointer back to 0 in case more processes failed
+			*/
+			if(j == end) {
+				j = 0;
+				end = proc_left - 1;
+				fail_p = 0;
+			} else {
+				j++;
+			}
 		}
 }
 
