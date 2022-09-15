@@ -112,7 +112,7 @@ void parallel_mat_mult(int numProc, int crashRate)
 		int pipefd[numProc][2];
 		int wstatus, status_id, index, i, j, k;
 		int runningChild = numProc;
-		int buf[p];
+		int buf[1];
 		int pid_to_pipe[numProc];
 		int proc_left = numProc;
 		int end = numProc - 1;
@@ -120,16 +120,16 @@ void parallel_mat_mult(int numProc, int crashRate)
 
 		for(i = 0; i < numProc; i++)
 		{
-				pid_to_pipe[i] = i;
 				pipe(pipefd[i]);
 				pid[i] = fork();
+				pid_to_pipe[i] = i;
 
 				if(pid[i] == 0) {
-					child_process_core(i, pipefd[i][1], crashRate);
-					exit(0);
+					 child_process_core(i, pipefd[i][1], crashRate);
+						exit(0);
 				} else if(pid[i] < 0) {
-					printf("Fork failed\n");
-					exit(0);
+						printf("Fork failed\n");
+						exit(0);
 				}
 		}
 		
@@ -143,21 +143,21 @@ void parallel_mat_mult(int numProc, int crashRate)
 			index = pid_to_pipe[j];
 			if(WIFEXITED(status_id)) {
 				// success, read from pipe and write to C_parallel matrix
-				read(pipefd[index][0], buf, sizeof(int) * p);
 				for(k = 0; k < p; k++) {
-					C_parallel[index][k] = buf[k];
+					read(pipefd[index][0], buf, sizeof(int));
+					C_parallel[index][k] = buf[0];				
 				}	
 
 				// close pipe and decrease number of processes
 				close(pipefd[index][0]);
 				proc_left--;
 			} else {
-				// map pipe index to new position of pid in array
-				pid_to_pipe[fail_p] = index;
-
-				// create a new child process and shift towards beginning of pid array
+				// failed, create a new child process and shift towards beginning of pid array
 				pid[fail_p] = fork();
 
+				// map pipe index to new position of pid in array
+				pid_to_pipe[fail_p] = index;
+				
 				if(pid[fail_p] == 0) {
 					// child process will run calculate method
 					child_process_core(index, pipefd[index][1], crashRate);
