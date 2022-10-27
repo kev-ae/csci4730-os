@@ -45,30 +45,41 @@ int pagefault_handler(int pid, int VPN, char reqType)
 		if(PFN < 0) {
 			PFN = find_replacement();
 			/* ---- */
-            // check if dirty bit is set
+            // get attr of page that will be swap out
             ipte = read_IPTE(PFN);
             pte = read_PTE(ipte.pid, ipte.VPN);
 
-            // set valid bit to false
-            pte.valid = false;
+			//printf("pagefault_handler dirty bit: %d", pte.dirty);
 
+			// swap out only if dirty ie save the state
             if (pte.dirty) {
-                // swap out
                 pte.dirty = false;
                 swap_out(ipte.pid, ipte.VPN, PFN);
             }
+
+			// update page table of previous
+			pte.valid = false;
             write_PTE(ipte.pid, ipte.VPN, pte);
 		}
 
-        // swap in
-        swap_in(pid, VPN, PFN);
+		// update the page table of new process to be added
         pte = read_PTE(pid, VPN);
         pte.valid = true;
+		if(reqType == 'W') {
+			pte.dirty = true;
+		} else {
+			pte.dirty = false;
+		}
         pte.PFN = PFN;
         write_PTE(pid, VPN, pte);
+
+		// update inverted page table
         ipte.pid = pid;
         ipte.VPN = VPN;
         write_IPTE(PFN, ipte);
+
+		// swap in
+        swap_in(pid, VPN, PFN);
 		
         //ipte = read_IPTE(PFN);
         //printf("pagefault handler ipte vpn = %d\n", VPN);
@@ -80,7 +91,7 @@ int get_PFN(int pid, int VPN, char reqType)
 {
 		/* Read page table entry for (pid, VPN) */
 		PTE pte = read_PTE(pid, VPN);
-        //printf("PFN = %d, valid = %d, dirty = %d\n", pte.PFN, pte.valid, pte.dirty);
+        //printf("\nget_PFN PFN = %d, valid = %d, dirty = %d\n", pte.PFN, pte.valid, pte.dirty);
 
 		/* if PTE is valid, it is a page hit. Return physical frame number (PFN) */
 		if(pte.valid) {
