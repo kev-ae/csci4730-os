@@ -1,27 +1,2 @@
-# PAGES: 4, # FRAMES: 4, # PROCS: 2, Replacement Policy: 2 - LRU
-[pid 1, W] 0x003b --> 0x003b: A [miss]
-[pid 0, W] 0x01c6 --> 0x01c6: K [miss]
-[pid 1, W] 0x026a --> 0x026a: Y [miss]
-[pid 0, R] 0x015b --> 0x015b: K [hit]
-[pid 1, W] 0x030e --> 0x030e: u [miss]
-[pid 0, R] 0x00a9 --> 0x00a9: A [miss]
-[pid 0, W] 0x0387 --> 0x0287: q [miss]
-[pid 0, R] 0x03d7 --> 0x02d7: q [hit]
-[pid 1, R] 0x006b --> 0x016b: A [miss]
-[pid 0, R] 0x0398 --> 0x0298: q [hit]
-[pid 1, W] 0x0392 --> 0x0392: D [hit]
-[pid 0, R] 0x00bb --> 0x00bb: A [hit]
-[pid 0, R] 0x024e --> 0x014e: A [miss]
-[pid 1, R] 0x0158 --> 0x0258: A [miss]
-[pid 1, W] 0x03f7 --> 0x03f7: g [hit]
-[pid 1, W] 0x0181 --> 0x0281: d [hit]
-[pid 0, R] 0x00c4 --> 0x00c4: A [hit]
-[pid 1, W] 0x03db --> 0x03db: q [hit]
-[pid 1, R] 0x03fc --> 0x03fc: q [hit]
-[pid 0, W] 0x008e --> 0x008e: h [hit]
-=====================================
-Request: 20
-Page Hit: 11 (55.00%)
-Page Miss: 9 (45.00%)
-Swap Read: 9
-Swap Write: 4
+# PAGES: 6, # FRAMES: 4, # PROCS: 1, Replacement Policy: 3 - CLOCK
+CLOCK reference output is not available.

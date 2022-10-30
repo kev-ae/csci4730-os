@@ -4,19 +4,42 @@
 #include "API.h"
 #include "list.h"
 
+int fifo_tail = 0;
+struct Node *head = NULL;
+
 int fifo()
 {
-		return 0;
+    // store previous index for replace
+	int PFN = fifo_tail;
+
+	// update tail ie queue
+    fifo_tail = (fifo_tail + 1) % MAX_PFN;
+	//printf("fifo tail = %d\n", fifo_tail);
+    return PFN; 
 }
 
 int lru()
 {
-		return 0;
+    // use double linked
+	int PFN;
+	struct Node* prev = head;
+	if(head != NULL) {
+		// get least recently used
+		while(prev->next != NULL) {
+			prev = prev->next;
+		}
+		PFN = prev->data;
+
+		// update list
+		head = list_remove_tail(head);
+		head = list_insert_head(head, PFN);
+	}
+    return PFN;
 }
 
 int clock()
 {
-		return 0;
+	return 0;
 }
 
 /*========================================================================*/
@@ -60,6 +83,9 @@ int pagefault_handler(int pid, int VPN, char reqType)
 			// update page table of previous
 			pte.valid = false;
             write_PTE(ipte.pid, ipte.VPN, pte);
+		} else if (replacementPolicy == LRU) {
+			// only occur at beginning when there is free frame
+			head = list_insert_head(head, PFN);
 		}
 
 		// update the page table of new process to be added
@@ -99,6 +125,11 @@ int get_PFN(int pid, int VPN, char reqType)
 				if(reqType == 'W') {
 						pte.dirty = true;
 						write_PTE(pid, VPN, pte);
+				}
+
+				if(replacementPolicy == LRU) {
+					head = list_remove(head, pte.PFN);
+					head = list_insert_head(head, pte.PFN);
 				}
 				return pte.PFN;
 		}
