@@ -6,6 +6,8 @@
 
 int fifo_tail = 0;
 struct Node *head = NULL;
+int clock_tail = 0;
+int* clock_ref = NULL;
 
 int fifo()
 {
@@ -14,6 +16,7 @@ int fifo()
 
 	// update tail ie queue
     fifo_tail = (fifo_tail + 1) % MAX_PFN;
+
 	//printf("fifo tail = %d\n", fifo_tail);
     return PFN; 
 }
@@ -39,7 +42,31 @@ int lru()
 
 int clock()
 {
-	return 0;
+	int PFN;
+	int found = 0;
+
+	while(true) {
+		if(clock_ref[clock_tail] == 0) {
+			// if bit is 0 return pfn to replace
+			PFN = clock_tail;
+			found = 1;
+		} else if (clock_ref[clock_tail] == 1) {
+			// if bit is 1 change to 0 and move on
+			clock_ref[clock_tail] = 0;
+		}
+
+		clock_tail = (clock_tail + 1) % MAX_PFN;
+
+		if(found == 1) {
+			break;
+		}
+	}
+    
+    /*
+    for(i = 0; i < MAX_PFN; i++) printf("%d ", clock_ref[i]);
+    printf("\n");
+    */
+	return PFN;
 }
 
 /*========================================================================*/
@@ -58,6 +85,7 @@ int find_replacement()
 int pagefault_handler(int pid, int VPN, char reqType)
 {
 		int PFN;
+		int i;
         IPTE ipte;
         PTE pte;
 
@@ -86,6 +114,12 @@ int pagefault_handler(int pid, int VPN, char reqType)
 		} else if (replacementPolicy == LRU) {
 			// only occur at beginning when there is free frame
 			head = list_insert_head(head, PFN);
+		} else if(replacementPolicy == CLOCK && clock_ref == NULL) {
+			// create reference bit arr for first call
+			clock_ref = malloc(sizeof(int) * MAX_PFN);
+			for(i = 0; i < MAX_PFN; i++) {
+				clock_ref[i] = 0;
+			}
 		}
 
 		// update the page table of new process to be added
@@ -130,6 +164,8 @@ int get_PFN(int pid, int VPN, char reqType)
 				if(replacementPolicy == LRU) {
 					head = list_remove(head, pte.PFN);
 					head = list_insert_head(head, pte.PFN);
+				} else if(replacementPolicy == CLOCK) {
+					clock_ref[pte.PFN] = 1;
 				}
 				return pte.PFN;
 		}

@@ -49,6 +49,7 @@ int clock()
 		if(clock_ref[clock_tail] == 0) {
 			// if bit is 0 return pfn to replace
 			PFN = clock_tail;
+            clock_ref[clock_tail] = 1;
 			found = 1;
 		} else if (clock_ref[clock_tail] == 1) {
 			// if bit is 1 change to 0 and move on
@@ -118,7 +119,7 @@ int pagefault_handler(int pid, int VPN, char reqType)
 			// create reference bit arr for first call
 			clock_ref = malloc(sizeof(int) * MAX_PFN);
 			for(i = 0; i < MAX_PFN; i++) {
-				clock_ref[i] = 0;
+				clock_ref[i] = 1;
 			}
 		}
 
