@@ -14,10 +14,7 @@ int file_cat(char *name)
 	ret = search_cur_dir(name);
 
 	// if file does not exist, return -1
-	if (ret == -1) {
-		printf("File does not exist\n");
-		return -1;
-	}
+	if (ret == -1) return -1;
 
 	// get the inode
 	file_inode = read_inode(ret);
@@ -62,65 +59,8 @@ int file_cat(char *name)
 
 int file_remove(char *name)
 {
-	int ret, size, i, indir_p;
-	int *temp;
-	char indir_buf[128];
-	Inode file_inode;
-
-	// check if file exist
-	ret = search_cur_dir(name);
-
-	if (ret == -1) {
-		printf("File does not exist\n");
-		return -1;
-	}
-
-	// get the inode
-	file_inode = read_inode(ret);
-
-	// check if link is equal to 0, free block/inode if so
-	file_inode.linkCount--;
-
-	if (file_inode.linkCount <= 0) {
-		// determine how many pointers to reference to
-		size = file_inode.blockCount;
-		
-		// go through the direct pointers
-		for(i = 0; i < 15 && i < size; i++) {
-			free_block(file_inode.directBlock[i]);
-		}
-
-		// if using indirect pointers
-		if (size > 15) {
-			size = size - 15;
-			indir_p = file_inode.indirectBlock;
-			read_disk_block(indir_p, indir_buf);
-			temp = (int*) indir_buf;
-			for (i = 0; i < size; i++) {
-				free_block(temp[i]);
-			}
-			free_block(indir_p);
-		}
-
-		free_inode(ret);
-	}
-
-	// get index of removed file
-	for(i = 0; i < curDir.numEntry; i++) {
-		if(command(name, curDir.dentry[i].name)) { 
-			break;
-		}
-	}
-
-	// move rm file to last entry
-	for(; i < curDir.numEntry - 1; i++) {
-		strncpy(curDir.dentry[i].name, curDir.dentry[i + 1].name, strlen(curDir.dentry[i + 1].name));
-		curDir.dentry[i].inode = curDir.dentry[i + 1].inode;
-	}
-
-	curDir.numEntry--;
-
-	return 0;
+		printf("rm is not implemented yet.\n");
+		return 0;
 }
 
 int hard_link(char *src, char *dest)
