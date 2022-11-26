@@ -167,7 +167,7 @@ int hard_link(char *src, char *dest)
 
 int file_copy(char *src, char *dest)
 {
-	int i, ret, inode_num, block, f_size, data_num, indir_p;
+	int i, ret, inode_num, block, data_num, indir_p;
 	int *temp;
 	char *buf = malloc(sizeof(char) * 513);
 	char *indir_buf = malloc(sizeof(char) * 513);
@@ -196,8 +196,6 @@ int file_copy(char *src, char *dest)
 		printf("File copy failed: not a file\n");
 		return -1;
 	}
-
-	f_size = file_inode.size;
 
 	if(file_inode.size > 7680) {
 		if(file_inode.blockCount + 1 > superBlock.freeBlockCount)
@@ -245,15 +243,9 @@ int file_copy(char *src, char *dest)
 		// get content of src
 		data_num = file_inode.directBlock[i];
 		read_disk_block(data_num, buf);
-		if (f_size >= 512) {
-			buf[512] = '\0';
-		} else {
-			buf[f_size + 1] = '\0';
-		}
 
 		// copy content over
 		write_disk_block(block, buf);
-		f_size -= 512;
 	}
 
 	if(new_inode.size > 7680) {
@@ -282,14 +274,7 @@ int file_copy(char *src, char *dest)
 
 			// copy
 			read_disk_block(temp[i - 15], buf);
-			if (f_size >= 512) {
-				buf[512] = '\0';
-			} else {
-				buf[f_size + 1] = '\0';
-			}
-
 			write_disk_block(block, buf);
-			f_size -= 512;
 		}
 		write_disk_block(new_inode.indirectBlock, (char*)indirectBlockMap);
 	}
