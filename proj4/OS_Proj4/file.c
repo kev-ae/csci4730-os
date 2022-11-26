@@ -6,7 +6,9 @@
 int file_cat(char *name)
 {
 	int ret, size, i, data_num, f_size, indir_p;
-	char buf[513], indir_buf[128];
+	char *buf = malloc(sizeof(char) * 513);
+	char *indir_buf = malloc(sizeof(char) * 513);
+	//char buf[513], indir_buf[128];
 	int *temp;
 	Inode file_inode;
 
@@ -15,7 +17,7 @@ int file_cat(char *name)
 
 	// if file does not exist, return -1
 	if (ret == -1) {
-		printf("File does not exist\n");
+		printf("File cat failed: file does not exist\n");
 		return -1;
 	}
 
@@ -57,6 +59,9 @@ int file_cat(char *name)
 		}
 	}
 
+	free(buf);
+	free(indir_buf);
+
 	return 0;
 }
 
@@ -64,28 +69,32 @@ int file_remove(char *name)
 {
 	int ret, size, i, indir_p;
 	int *temp;
-	char indir_buf[128];
+	char *indir_buf = malloc(sizeof(char) * 513);
 	Inode file_inode;
 
 	// check if file exist
 	ret = search_cur_dir(name);
 
 	if (ret == -1) {
-		printf("File does not exist\n");
+		printf("File remove failed: file does not exist\n");
 		return -1;
 	}
 
 	// get the inode
 	file_inode = read_inode(ret);
 
+	if (file_inode.type != file) {
+		printf("File remove failed: not a file\n");
+		return -1;
+	}
+
+	size = file_inode.blockCount;
+
 	// check if link is equal to 0, free block/inode if so
 	file_inode.linkCount--;
 	write_inode(ret, file_inode);
 
 	if (file_inode.linkCount <= 0) {
-		// determine how many pointers to reference to
-		size = file_inode.blockCount;
-		
 		// go through the direct pointers
 		for(i = 0; i < 15 && i < size; i++) {
 			free_block(file_inode.directBlock[i]);
@@ -120,6 +129,7 @@ int file_remove(char *name)
 	}
 
 	curDir.numEntry--;
+	free(indir_buf);
 
 	return 0;
 }
@@ -132,7 +142,7 @@ int hard_link(char *src, char *dest)
 	ret = search_cur_dir(src);
 
 	if (ret == -1) {
-		printf("File does not exist\n");
+		printf("Hard link create failed: src file does not exist\n");
 		return -1;
 	}
 
@@ -158,39 +168,46 @@ int hard_link(char *src, char *dest)
 int file_copy(char *src, char *dest)
 {
 	int i, ret, inode_num, block, f_size, data_num, indir_p;
-	int* temp;
-	char buf[513], indir_buf[128];
+	int *temp;
+	char *buf = malloc(sizeof(char) * 513);
+	char *indir_buf = malloc(sizeof(char) * 513);
+	//char buf[513], indir_buf[128];
 	Inode file_inode, new_inode;
 
 	ret = search_cur_dir(src);
 
 	if (ret == -1) {
-		printf("File does not exist\n");
+		printf("File copy failed: src file does not exist\n");
 		return -1;
 	}
 
 	if (curDir.numEntry + 1 > MAX_DIR_ENTRY) {
-		printf("Hard link create failed: directory is full!\n");
+		printf("File copy failed: directory is full!\n");
 		return -1;
 	}
 
 	if(superBlock.freeInodeCount < 1) {
-		printf("File create failed: inode is full!\n");
+		printf("File copy failed: inode is full!\n");
 		return -1;
 	}
 
 	file_inode = read_inode(ret);
+	if (file_inode.type != file) {
+		printf("File copy failed: not a file\n");
+		return -1;
+	}
+
 	f_size = file_inode.size;
 
 	if(file_inode.size > 7680) {
 		if(file_inode.blockCount + 1 > superBlock.freeBlockCount)
 		{
-			printf("File create failed: data block is full!\n");
+			printf("File copy failed: data block is full!\n");
 			return -1;
 		}
 	} else {
 		if(file_inode.blockCount > superBlock.freeBlockCount) {
-			printf("File create failed: data block is full!\n");
+			printf("File copy failed: data block is full!\n");
 			return -1;
 		}
 	}
@@ -198,7 +215,7 @@ int file_copy(char *src, char *dest)
 	// get inode and fill it
 	inode_num = get_inode();
 	if(inode_num < 0) {
-		printf("File_create error: not enough inode.\n");
+		printf("File copy error: not enough inode.\n");
 		return -1;
 	}
 
@@ -219,7 +236,7 @@ int file_copy(char *src, char *dest)
 		if (i >= new_inode.blockCount) break;
 		block = get_block();
 		if(block == -1) {
-			printf("File_create error: get_block failed\n");
+			printf("File copy error: get_block failed\n");
 			return -1;
 		}
 		//set direct block
@@ -243,7 +260,7 @@ int file_copy(char *src, char *dest)
 		// get an indirect block
 		block = get_block();
 		if(block == -1) {
-			printf("File_create error: get_block failed\n");
+			printf("File copy error: get_block failed\n");
 			return -1;
 		}
 
@@ -257,7 +274,7 @@ int file_copy(char *src, char *dest)
 		{
 			block = get_block();
 			if(block == -1) {
-				printf("File_create error: get_block failed\n");
+				printf("File copy error: get_block failed\n");
 				return -1;
 			}
 			//set direct block
@@ -279,6 +296,10 @@ int file_copy(char *src, char *dest)
 
 	// write inode
 	write_inode(inode_num, new_inode);
+
+	free(buf);
+	free(indir_buf);
+	
 	return 0;
 }
 
