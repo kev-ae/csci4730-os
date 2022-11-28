@@ -9,6 +9,11 @@ int dir_make(char* name)
 	Inode new_inode;
 	Dentry new_dir;
 
+	if (command(name, ".") || command(name, "..")) {
+		printf("Directory create failed: cannot create with name . or ..\n");
+		return -1;
+	}
+
 	ret = search_cur_dir(name);
 	if (ret >= 0) {
 		printf("Directory create failed: %s exist.\n", name);
@@ -24,8 +29,6 @@ int dir_make(char* name)
 		printf("Directory create failed: inode is full!\n");
 		return -1;
 	}
-
-	// check to make sure name is not . or ..
 
 	inode_num = get_inode();
 	new_block = get_block();

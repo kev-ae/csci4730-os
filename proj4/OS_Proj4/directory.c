@@ -93,7 +93,7 @@ int dir_remove(char *name)
 	}
 
 	read_disk_block(node.directBlock[0], (char*)&dir);
-	if (dir.numEntry != 0) {
+	if (dir.numEntry != 2) {
 		printf("Directory remove failed: directory is not empty\n");
 		return -1;
 	}
